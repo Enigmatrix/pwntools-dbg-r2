@@ -3,7 +3,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='pwntools-dbg-r2',  
-    version='0.1',
+    version='0.1.5',
     scripts=['pwntools-gdb', 'r2-session'] ,
     author="Enigmatrix",
     author_email="enigmatrix2000@gmail.com",

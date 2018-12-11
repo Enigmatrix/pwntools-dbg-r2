@@ -55,10 +55,10 @@ def main():
         gdb_script = f.read()
 
     ip, port = re.findall("target remote (.+):([0-9]+)", gdb_script)[0]
-
     # Find the user commands that start with "#"
     user_settings = {setting_key(line[2:]): setting_value(line[2:]) for line in gdb_script.split("\n") if line.startswith("#>")}
-    user_commands = '\n'.join([line[1:] for line in gdb_script.split("\n") if line.startswith("#") and line[1] != ">"])
+    raw_user_commands = [line[3:] for line in gdb_script.split("\n") if line.startswith("#r2")]
+    user_commands = "\n".join(map(lambda x: 'r2.cmd("%s")'%x, raw_user_commands))
 
     script_file = args.x[0] + ".py"
     with open(script_file,"w") as f:
@@ -78,6 +78,8 @@ def main():
             r2.cmd("o gdb://{ip:s}:{port:s}".format(ip=ip, port=port))
             r2.cmd("dL gdb")
             r2.cmd("e cfg.debug=true")
+            for cmd in raw_user_commands:
+                r2.cmd(cmd)
         else:
             env = os.environ.copy()
             env['PATH'] = env['PATH'] + ":"+os.path.dirname(env['_'])
