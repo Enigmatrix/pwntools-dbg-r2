@@ -74,12 +74,11 @@ def main():
     try:
         if 'port' in user_settings:
             r2port = user_settings['port']
-            r2 = r2pipe.open('http://localhost:'+r2port)
-            r2.cmd("o gdb://{ip:s}:{port:s}".format(ip=ip, port=port))
-            r2.cmd("dL gdb")
-            r2.cmd("e cfg.debug=true")
+            r2 = r2pipe.open('rap://127.0.0.1:'+r2port)
+            r2.cmd("o dbg://"+user_settings['pid'])
             for cmd in raw_user_commands:
                 r2.cmd(cmd)
+            subprocess.call(["sleep", "9999999999"])
         else:
             env = os.environ.copy()
             env['PATH'] = env['PATH'] + ":"+os.path.dirname(env['_'])
