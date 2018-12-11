@@ -4,9 +4,15 @@
 
 import argparse
 import re
+import os
 import subprocess
 import shlex
 import os
+import pwn
+import psutil
+import sys
+import fcntl
+import termios
 
 r2_python_template = """#!/usr/bin/env python
 import os, r2pipe
@@ -21,6 +27,13 @@ load_modules()
 r2.cmd('ib') # Reload the buffer info
 {user_commands:s}
 """
+
+
+def get_r2_proc():
+    proc_iter = psutil.process_iter(attrs=["pid", "name", "cmdline"])
+    r2  = [p for p in proc_iter if "r2" in p.info["cmdline"]]
+    return None if len(r2) < 1 else r2[0]
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -39,7 +52,8 @@ def main():
     ip, port = re.findall("target remote (.+):([0-9]+)", gdb_script)[0]
 
     # Find the user commands that start with "#"
-    user_commands = '\n'.join([line[1:] for line in gdb_script.split("\n") if line.startswith("#")])
+    user_settings = [line[2:] for line in gdb_script.split("\n") if line.startswith("#>")]
+    user_commands = '\n'.join([line[1:] for line in gdb_script.split("\n") if line.startswith("#") and line[1] != ">"])
 
     script_file = args.x[0] + ".py"
     with open(script_file,"w") as f:
@@ -48,9 +62,17 @@ def main():
     # TODO
     # start r2 in another terminal, then run new-session, which does this: https://reverseengineering.stackexchange.com/questions/18342/is-there-a-way-to-explicitly-connect-r2pipe-to-an-existing-radare2-session-that
     # (read comments!). this script will connect to that. user might need to specify port n there
-    command = ["screen","-t","pwntools-r2","r2","-d","-i",script_file, "gdb://{ip:s}:{port:s}".format(ip=ip, port=port)]
 
-    subprocess.call(command)
+    # open another window as sometimes the up/down keys wont work
+    command = ["x-terminal-emulator", "-e", ' '.join(["r2","-d","-i",script_file, "gdb://{ip:s}:{port:s}".format(ip=ip, port=port)])]
+
+    try:
+        r2p = get_r2_proc()
+        subprocess.call(command)
+    except e:
+        print(e)
+        subprocess.call(["sleep", "9999999999"])
+
 
 if __name__ == '__main__':
     main()
