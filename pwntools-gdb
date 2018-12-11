@@ -13,6 +13,7 @@ import psutil
 import sys
 import fcntl
 import termios
+import r2pipe
 
 r2_python_template = """#!/usr/bin/env python
 import os, r2pipe
@@ -34,6 +35,10 @@ def get_r2_proc():
     r2  = [p for p in proc_iter if "r2" in p.info["cmdline"]]
     return None if len(r2) < 1 else r2[0]
 
+def setting_key(s):
+    return s.split('=')[0]
+def setting_value(s):
+    return s.split('=')[1]
 
 def main():
     parser = argparse.ArgumentParser()
@@ -52,7 +57,7 @@ def main():
     ip, port = re.findall("target remote (.+):([0-9]+)", gdb_script)[0]
 
     # Find the user commands that start with "#"
-    user_settings = [line[2:] for line in gdb_script.split("\n") if line.startswith("#>")]
+    user_settings = {setting_key(line[2:]): setting_value(line[2:]) for line in gdb_script.split("\n") if line.startswith("#>")}
     user_commands = '\n'.join([line[1:] for line in gdb_script.split("\n") if line.startswith("#") and line[1] != ">"])
 
     script_file = args.x[0] + ".py"
@@ -67,13 +72,19 @@ def main():
     command = ["x-terminal-emulator", "-e", ' '.join(["r2", "-d","-i",script_file, "gdb://{ip:s}:{port:s}".format(ip=ip, port=port)])]
 
     try:
-        r2p = get_r2_proc()
-        env = os.environ.copy()
-        env['PATH'] = env['PATH'] + ":"+os.path.dirname(env['_'])
-        #subprocess.call(["echo", str(env) ])
+        if 'port' in user_settings:
+            r2port = user_settings['port']
+            r2 = r2pipe.open('http://localhost:'+r2port)
+            r2.cmd("o gdb://{ip:s}:{port:s}".format(ip=ip, port=port))
+            r2.cmd("dL gdb")
+            r2.cmd("e cfg.debug=true")
+        else:
+            env = os.environ.copy()
+            env['PATH'] = env['PATH'] + ":"+os.path.dirname(env['_'])
+            os.execvpe(command[0], command, env)
+        #subprocess.call(["echo", str(user_settings)+str(user_commands) ])
         #subprocess.call(["sleep", "9999999999"])
-        os.execvpe(command[0], command, env)
-    except e:
+    except Exception as e:
         print(e)
         subprocess.call(["sleep", "9999999999"])
 
