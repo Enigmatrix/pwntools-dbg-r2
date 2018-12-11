@@ -64,11 +64,15 @@ def main():
     # (read comments!). this script will connect to that. user might need to specify port n there
 
     # open another window as sometimes the up/down keys wont work
-    command = ["x-terminal-emulator", "-e", ' '.join(["r2","-d","-i",script_file, "gdb://{ip:s}:{port:s}".format(ip=ip, port=port)])]
+    command = ["x-terminal-emulator", "-e", ' '.join(["r2", "-d","-i",script_file, "gdb://{ip:s}:{port:s}".format(ip=ip, port=port)])]
 
     try:
         r2p = get_r2_proc()
-        subprocess.call(command)
+        env = os.environ.copy()
+        env['PATH'] = env['PATH'] + ":"+os.path.dirname(env['_'])
+        #subprocess.call(["echo", str(env) ])
+        #subprocess.call(["sleep", "9999999999"])
+        os.execvpe(command[0], command, env)
     except e:
         print(e)
         subprocess.call(["sleep", "9999999999"])

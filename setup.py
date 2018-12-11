@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name='pwntools-dbg-r2',  
     version='0.1',
-    scripts=['pwntools-gdb'] ,
+    scripts=['pwntools-gdb', 'r2-session'] ,
     author="Enigmatrix",
     author_email="enigmatrix2000@gmail.com",
     description="Package to enable debugging with Radare2 in pwntools",

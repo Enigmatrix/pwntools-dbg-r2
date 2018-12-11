@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+import sys
+import tempfile
+import r2pipe
+import os
+import subprocess
+
+if len(sys.argv) == 1:
+  r.cmd("?E Usage: . `r2session <port>`\nUse a valid port number!")
+  exit(1)
+
+port= sys.argv[1]
+cmds = """e http.log=false
+e http.sandbox=false
+=h& {port:s}
+""".format(port=port)
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=".r2") as f:
+    f.write(cmds)
+    subprocess.call(["echo", f.name])
+
+
+
